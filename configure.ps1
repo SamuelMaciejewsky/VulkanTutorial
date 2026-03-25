@@ -4,6 +4,7 @@ param(
     [string]$BuildDir = "build",
     [string]$exe="myapp.exe",
     [string]$VcpkgRoot = $env:VCPKG_ROOT,
+    [string]$MSYS_UCRT_ROOT = $env:MSYS_UCRT64, #this env was manually defined
     [switch]$Clean,
     [switch]$c,
     [switch]$b,
@@ -28,8 +29,8 @@ if (-not ($DoConfigure -or $DoBuild -or $DoExecute)) {
 
 $ToolchainFile = "$VcpkgRoot\scripts\buildsystems\vcpkg.cmake"
 
-$CC = "C:\msys64\ucrt64\bin\gcc.exe"
-$CXX = "C:\msys64\ucrt64\bin\g++.exe"
+$CC = "$MSYS_UCRT_ROOT\gcc.exe"
+$CXX = "$MSYS_UCRT_ROOT\g++.exe"
 
 Write-Output "Build Type: $BuildType"
 Write-Output "Build Directory: $BuildDir"
