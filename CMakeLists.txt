@@ -24,7 +24,40 @@ find_program(SLANGC_EXECUTABLE NAMES slangc HINTS "$ENV{VULKAN_SDK}/Bin" "$ENV{V
 add_executable(slangc::executable IMPORTED)
 set_property(TARGET slangc::executable PROPERTY IMPORTED_LOCATION "${SLANGC_EXECUTABLE}")
 
+function(add_slang_shader_target TARGET)
+    cmake_parse_arguments("SHADER" "" "" "SOURCES" ${ARGN})
+    if(NOT SHADER_SOURCES)
+        message(FATAL_ERROR "add_slang_shader_target(${TARGET}) requires at least one source file.")
+    endif()
+
+    set(SHADERS_DIR "${CMAKE_CURRENT_BINARY_DIR}/shaders")
+    set(SLANG_OUTPUT "${SHADERS_DIR}/slang.spv")
+
+    add_custom_command(
+        OUTPUT "${SLANG_OUTPUT}"
+        COMMAND ${CMAKE_COMMAND} -E make_directory "${SHADERS_DIR}"
+        COMMAND ${SLANGC_EXECUTABLE}
+            ${SHADER_SOURCES}
+            -target spirv
+            -profile spirv_1_4
+            -emit-spirv-directly
+            -fvk-use-entrypoint-name
+            -entry vertMain
+            -entry fragMain
+            -o "${SLANG_OUTPUT}"
+        DEPENDS ${SHADER_SOURCES}
+        COMMENT "Compiling Slang shaders"
+        VERBATIM
+    )
+
+    add_custom_target(${TARGET} DEPENDS "${SLANG_OUTPUT}")
+endfunction()
+
 add_executable(myapp src/main.cc)
+
+set(SHADER_SLANG_SOURCES "${CMAKE_CURRENT_LIST_DIR}/src/shaders/shader.slang")
+add_slang_shader_target(myapp_slang_shaders SOURCES "${SHADER_SLANG_SOURCES}")
+add_dependencies(myapp myapp_slang_shaders)
 
 target_compile_definitions(myapp PRIVATE
     VULKAN_HPP_DISPATCH_LOADER_DYNAMIC=1

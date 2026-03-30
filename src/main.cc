@@ -26,6 +26,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <cassert>
+#include <fstream>
 #include <iostream>
 #include <limits>
 #include <map>
@@ -46,6 +47,24 @@ constexpr bool enableValidationLayers = false;
 constexpr bool enableValidationLayers = true;
 #endif
 // ----- END VALIDATION LAYERS -----
+
+static std::vector<char> readFile(const std::string& filename) {
+    
+    std::ifstream file(filename, std::ios::ate | std::ios::binary);
+
+    if(!file.is_open()){
+        throw std::runtime_error("failed to open file!");
+    }
+
+    std::vector<char> buffer(file.tellg());
+
+    file.seekg(0, std::ios::beg);
+    file.read(buffer.data(), static_cast<std::streamsize>(buffer.size()));
+    file.close();
+
+    return buffer;
+
+}
 
 class HelloTriangleApplication {
     
@@ -643,7 +662,10 @@ class HelloTriangleApplication {
     // - 8. Create Image Views
     void createImageViews() {
 
-        assert(swapChainImages.empty());
+        assert(!swapChainImages.empty());
+
+        swapChainImageViews.clear();
+        swapChainImageViews.reserve(swapChainImages.size());
 
         vk::ImageViewCreateInfo imageViewCreateInfo = {
             .viewType         = vk::ImageViewType::e2D,
@@ -658,7 +680,7 @@ class HelloTriangleApplication {
         for(vk::Image &image : swapChainImages) {
 
             imageViewCreateInfo.image = image;
-            swapChainImageViews.emplace_back(device, imageViewCreateInfo);
+            swapChainImageViews.push_back(device.createImageView(imageViewCreateInfo));
 
         }
 
@@ -666,6 +688,18 @@ class HelloTriangleApplication {
 
     // - 9. Graphics Pipeline
     void createGraphicsPipeline() {
+
+        std::vector<char> shaderCode = readFile("shaders/slang.spv");
+        std::cout << shaderCode.size() << std::endl;
+
+    }
+
+    [[nodiscard]] vk::ShaderModule createShaderModule(const std::vector<char> &code) const {
+    
+        vk::ShaderModuleCreateInfo createShaderModuleInfo {
+            .codeSize = code.size() * sizeof(char),
+            .pCode    = reinterpret_cast<const uint32_t*>(code.data())
+        };
 
         
 
@@ -682,6 +716,7 @@ class HelloTriangleApplication {
         createLogicalDevice();
         createSwapChain();
         createImageViews();
+        createGraphicsPipeline();
 
     }
 

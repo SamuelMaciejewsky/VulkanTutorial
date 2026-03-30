@@ -89,14 +89,22 @@ if ($DoExecute) {
         throw "Could not find $exe in '$BuildDir'. Build with -b or use -cbe."
     }
 
+    $AppPath = (Resolve-Path $AppPath).Path
+    $RunDir = (Resolve-Path $BuildDir).Path
+
     if($debug) {
         $env:VK_LOADER_DEBUG = "error, warn, debug"
     }
 
-    & $AppPath
-    
-    if($debug) {
-        $env:VK_LOADER_DEBUG = $null
+    Push-Location $RunDir
+    try {
+        & $AppPath
+    } finally {
+        Pop-Location
+
+        if($debug) {
+            $env:VK_LOADER_DEBUG = $null
+        }
     }
 
 }
